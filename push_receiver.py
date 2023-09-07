@@ -24,6 +24,7 @@ class PushReceiver:
 
 class PushReceiverHandler(DatagramRequestHandler):
     feed: Feed[Response]
+    feed_tasks: set[asyncio.Task] = set()
 
     def __init__(self, feed: Feed[Response], request, client_address, server: BaseServer) -> None:
         super().__init__(request, client_address, server)
@@ -31,4 +32,7 @@ class PushReceiverHandler(DatagramRequestHandler):
         self.feed = feed
 
     def handle(self):
-        asyncio.create_task(self.feed.feed(Response(self.rfile.read().decode()[:-1].split(" "))))
+        task = asyncio.create_task(self.feed.feed(Response(self.rfile.read().decode()[:-1].split(" "))))
+
+        self.feed_tasks.add(task)
+        task.add_done_callback(self.feed_tasks.discard)
