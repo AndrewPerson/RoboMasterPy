@@ -1,16 +1,11 @@
-from typing import Generic, TypeVar, AsyncGenerator
+from typing import Generic, TypeVar
 import asyncio
 
 FeedT = TypeVar("FeedT")
-class Feed(Generic[FeedT], AsyncGenerator[FeedT, None]):
-    queued_data: list[FeedT]
-    data_lock: asyncio.Lock
-    recv_data_flag: asyncio.Event
-
-    def __init__(self):
-        self.queued_data = []
-        self.data_lock = asyncio.Lock()
-        self.recv_data_flag = asyncio.Event()
+class Feed(Generic[FeedT]):
+    queued_data: list[FeedT] = []
+    data_lock: asyncio.Lock = asyncio.Lock()
+    recv_data_flag: asyncio.Event = asyncio.Event()
 
     async def feed(self, data: FeedT):
         await self.data_lock.acquire()
