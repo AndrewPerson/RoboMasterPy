@@ -4,7 +4,7 @@ from data import *
 from push_receiver import PushReceiver
 from feed import Feed
 
-async def connect_to_robomaster(ip: str):
+async def connect_to_robomaster(ip: str) -> "RoboMasterClient":
     command_socket = await asyncio.open_connection(ip, CONTROL_PORT)
 
     return RoboMasterClient(ip, command_socket)
