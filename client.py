@@ -7,7 +7,11 @@ from feed import Feed
 async def connect_to_robomaster(ip: str) -> "RoboMasterClient":
     command_socket = await asyncio.open_connection(ip, CONTROL_PORT)
 
-    return RoboMasterClient(ip, command_socket)
+    client = RoboMasterClient(ip, command_socket)
+
+    await client.do("command")
+
+    return client
 
 
 class RoboMasterClient:
@@ -19,7 +23,6 @@ class RoboMasterClient:
 
     line: Feed[Line] = Feed()
 
-    command_task: asyncio.Task
     handle_push_task: asyncio.Task
 
     def __init__(self, ip: str, command_conn: tuple[asyncio.StreamReader, asyncio.StreamWriter]) -> None:
@@ -27,11 +30,9 @@ class RoboMasterClient:
 
         self.push_receiver = PushReceiver(ip, PUSH_PORT)
 
-        self.command_task = asyncio.create_task(self._do("command"))
         self.handle_push_task = asyncio.create_task(self.handle_push(self.push_receiver.feed))
 
     def __del__(self):
-        self.command_task.cancel()
         self.handle_push_task.cancel()
 
     async def handle_push(self, feed: Feed[Response]):
