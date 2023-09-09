@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "sbhs-robomaster"
+name = "sbhs_robomaster"
 version = "0.0.3"
 authors = [
   { name="AP2", email="professor_smart@hotmail.com" },
