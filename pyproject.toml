@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sbhs-robomaster"
-version = "0.0.2"
+version = "0.0.3"
 authors = [
   { name="AP2", email="professor_smart@hotmail.com" },
 ]
 description = "A simple python package to control the DJI RoboMaster EP2"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.11"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
