@@ -1,8 +1,9 @@
 from enum import Enum
 import asyncio
-from data import *
-from push_receiver import PushReceiver
-from feed import Feed
+from .data import *
+from .push_receiver import PushReceiver
+from .feed import Feed
+
 
 async def connect_to_robomaster(ip: str) -> "RoboMasterClient":
     command_socket = await asyncio.open_connection(ip, CONTROL_PORT)

@@ -1,6 +1,7 @@
 from typing import Generic, TypeVar
 import asyncio
 
+
 FeedT = TypeVar("FeedT")
 class Feed(Generic[FeedT]):
     queued_data: list[FeedT] = []

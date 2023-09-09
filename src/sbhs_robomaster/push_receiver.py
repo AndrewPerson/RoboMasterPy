@@ -1,6 +1,7 @@
 import asyncio
-from data import Response
-from feed import Feed
+from .data import Response
+from .feed import Feed
+
 
 class PushReceiver:
     data_receiving_task: asyncio.Task

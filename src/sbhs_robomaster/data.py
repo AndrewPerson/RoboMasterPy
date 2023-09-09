@@ -2,6 +2,7 @@ from enum import Enum
 from dataclasses import dataclass
 from typing import TypeVar
 
+
 DIRECT_CONNECT_IP = "192.168.2.1"
 
 VIDEO_PORT = 40921
