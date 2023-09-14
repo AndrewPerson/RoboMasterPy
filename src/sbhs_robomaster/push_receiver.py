@@ -6,9 +6,11 @@ from .feed import Feed
 class PushReceiver:
     data_receiving_task: asyncio.Task
 
-    feed: Feed[Response] = Feed()
+    feed: Feed[Response]
 
-    def __init__(self, ip: str, port: int):
+    def __init__(self, port: int):
+        self.feed = Feed()
+
         loop = asyncio.get_event_loop()
         
         asyncio.create_task(
@@ -27,11 +29,14 @@ class PushReceiver:
 
 
 class PushReceiverHandler(asyncio.DatagramProtocol):
-    feed: Feed[bytes] = Feed()
-    feed_tasks: set[asyncio.Task] = set()
+    feed: Feed[bytes]
+    feed_tasks: set[asyncio.Task]
 
     def __init__(self) -> None:
         super().__init__()
+
+        self.feed = Feed()
+        self.feed_tasks = set()
 
     def datagram_received(self, data, addr):
         t = asyncio.create_task(self.feed.feed(data))

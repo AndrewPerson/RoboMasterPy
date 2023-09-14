@@ -6,12 +6,14 @@ DroppingAsyncEnumerableT = TypeVar("DroppingAsyncEnumerableT")
 class DroppingAsyncEnumerable(Generic[DroppingAsyncEnumerableT]):
     enumerable: AsyncIterable[DroppingAsyncEnumerableT]
     current: DroppingAsyncEnumerableT
-    current_flag: asyncio.Event = asyncio.Event()
+    current_flag: asyncio.Event
     poll_task: asyncio.Task
     done: bool = False
 
     def __init__(self, enumerable: AsyncIterable[DroppingAsyncEnumerableT]):
         self.enumerable = enumerable
+
+        self.current_flag = asyncio.Event()
 
         self.poll_task = asyncio.create_task(self._poll_current())
 
