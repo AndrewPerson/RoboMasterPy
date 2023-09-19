@@ -3,45 +3,22 @@ from dataclasses import dataclass
 from typing import TypeVar
 
 
-DIRECT_CONNECT_IP = "192.168.2.1"
-
-VIDEO_PORT = 40921
-AUDIO_PORT = 40922
-CONTROL_PORT = 40923
-PUSH_PORT = 40924
-EVENT_PORT = 40925
-IP_PORT = 40926
-
-
-def command_to_str(command: str | int | float | bool | Enum):
-    match command:
-        case str():
-            return command
-        case bool():
-            return "on" if command else "off"
-        case int() | float():
-            return str(command)
-        case Enum():
-            if isinstance(command.value, str) or isinstance(command.value, int) or isinstance(command.value, float) \
-                or isinstance(command.value, bool) or isinstance(command.value, Enum):
-                return command_to_str(command.value)
-            else:
-                raise Exception("Invalid enum type")
-
-
 class Mode(Enum):
+    """"""
     ChassisLead = "chassis_lead"
     GimbalLead = "gimbal_lead"
     Free = "free"
 
 
 class GripperStatus(Enum):
+    """"""
     Closed = "0"
     PartiallyOpen = "1"
     Open = "2"
 
 
 class LineType(Enum):
+    """"""
     NoLine = "0"
     Straight = "1"
     Fork = "2"
@@ -49,6 +26,7 @@ class LineType(Enum):
 
 
 class LineColour(Enum):
+    """"""
     Red = "red"
     Blue = "blue"
     Green = "green"
@@ -56,18 +34,23 @@ class LineColour(Enum):
 
 @dataclass
 class Response:
+    """
+    Wrapper around the data returned by the robot.
+
+    Provides convenience functions for getting the data in the correct type.
+    """
     data: list[str]
 
-    def get_str(self, index: int):
+    def get_str(self, index: int) -> str:
         return self.data[index]
     
-    def get_int(self, index: int):
+    def get_int(self, index: int) -> int:
         return int(self.data[index])
 
-    def get_float(self, index: int):
+    def get_float(self, index: int) -> float:
         return float(self.data[index])
     
-    def get_bool(self, index: int):
+    def get_bool(self, index: int) -> bool:
         if self.data[index] == "on":
             return True
         elif self.data[index] == "off":
@@ -76,7 +59,22 @@ class Response:
             raise Exception("Invalid bool value")
     
     GetEnumT = TypeVar("GetEnumT", bound=Enum)
-    def get_enum(self, index: int, enum: type[GetEnumT]):
+    def get_enum(self, index: int, enum: type[GetEnumT]) -> GetEnumT:
+        """
+        Example usage:
+        ```py
+        class MyEnum(Enum):
+            A = "a"
+            B = "b"
+            C = "c"
+
+        response = Response(["a", "b", "c"])
+
+        response.get_enum(0, MyEnum) # MyEnum.A
+        response.get_enum(1, MyEnum) # MyEnum.B
+        response.get_enum(2, MyEnum) # MyEnum.C
+        ```
+        """
         return enum(self.data[index])
 
 
@@ -96,7 +94,7 @@ class ChassisSpeed:
     wheels: WheelSpeed
 
     @staticmethod
-    def parse(data: Response):
+    def parse(data: Response) -> "ChassisSpeed":
         return ChassisSpeed(
             z         = data.get_float(0),
             x         = data.get_float(1),
@@ -117,7 +115,7 @@ class ChassisPosition:
     clockwise: float | None
 
     @staticmethod
-    def parse(data: Response):
+    def parse(data: Response) -> "ChassisPosition":
         return ChassisPosition(
             z = data.get_float(0),
             x = data.get_float(1),
@@ -132,7 +130,7 @@ class ChassisAttitude:
     yaw: float
 
     @staticmethod
-    def parse(data: Response):
+    def parse(data: Response) -> "ChassisAttitude":
         return ChassisAttitude(
             pitch = data.get_float(0),
             roll  = data.get_float(1),
@@ -155,7 +153,7 @@ class ChassisStatus:
     hill_static: bool
 
     @staticmethod
-    def parse(data: Response):
+    def parse(data: Response) -> "ChassisStatus":
         return ChassisStatus(
             static      = data.get_bool(0),
             up_hill     = data.get_bool(1),
@@ -185,7 +183,7 @@ class Line:
     points: list[Point]
 
     @staticmethod
-    def parse(data: Response):
+    def parse(data: Response) -> "Line":
         point_count = (len(data.data) - 1) // 4
 
         match data.get_int(0):
