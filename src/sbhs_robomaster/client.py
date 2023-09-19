@@ -72,6 +72,7 @@ class RoboMasterClient:
     _command_lock: asyncio.Lock
     _push_receiver: PushReceiver
     _handle_push_task: asyncio.Task
+    _exiting: bool
 
     def __init__(self, command_conn: tuple[asyncio.StreamReader, asyncio.StreamWriter]) -> None:
         """
@@ -86,13 +87,18 @@ class RoboMasterClient:
         self._command_lock = asyncio.Lock()
         self._push_receiver = PushReceiver(_PUSH_PORT)
         self._handle_push_task = asyncio.create_task(self._handle_push(self._push_receiver.feed))
+        self._exiting = False
 
     async def __aenter__(self):
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
         await self.do("quit")
+
+        self._exiting = True
+
         self._handle_push_task.cancel()
+        self._conn[1].close()
 
     async def _handle_push(self, feed: Feed[Response]):
         async for response in feed:
@@ -108,6 +114,9 @@ class RoboMasterClient:
 
     async def _do(self, command: str):
         await self._command_lock.acquire()
+
+        if self._exiting:
+            raise Exception("Client is exiting.")
 
         self._conn[1].write(command.encode())
         await self._conn[1].drain()
