@@ -55,11 +55,13 @@ class Feed(Generic[FeedT]):
     asyncio.run(main())
     ```
 
-    If you ever want to stop receiving data, just `break` out of the loop.
+    To stop receiving data, just `break` out of the loop.
 
     **NOTE:** Data in a feed may arrive faster than it can be consumed. This means that
     you may get delayed results. You probably want to use `.dropping_async_enumerable.DroppingAsyncEnumerable` to help
     with this.
+
+    **NOTE:** Data sent to a feed *before* it is iterated over won't appear in the iteration.
     """
 
     _iterators: WeakSet["FeedIterator[FeedT]"]

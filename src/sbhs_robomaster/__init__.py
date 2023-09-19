@@ -10,12 +10,12 @@ pip install sbhs-robomaster
 ## Pre-requisite knowledge
 This library heavily relies on async code and async iterators.
 
-You can read up about async code at [https://superfastpython.com/python-asyncio/](https://superfastpython.com/python-asyncio/)
-and [https://docs.python.org/3/library/asyncio.html](https://docs.python.org/3/library/asyncio.html).
+A good tutorial on async code is at [https://superfastpython.com/python-asyncio/](https://superfastpython.com/python-asyncio/)
+and the documentation is at [https://docs.python.org/3/library/asyncio.html](https://docs.python.org/3/library/asyncio.html).
 
-You don't need to know anything about iterators or async iterators as the usage is very simple. But you can still read
-up about them at [https://www.pythonlikeyoumeanit.com/Module2_EssentialsOfPython/Iterables.html](https://www.pythonlikeyoumeanit.com/Module2_EssentialsOfPython/Iterables.html)
-and at [https://superfastpython.com/python-asyncio/#Asynchronous_Iterators](https://superfastpython.com/python-asyncio/#Asynchronous_Iterators).
+No knowledge about iterators or async iterators is needed as the usage is very simple. But a good tutorial on iterators is at
+[https://www.pythonlikeyoumeanit.com/Module2_EssentialsOfPython/Iterables.html](https://www.pythonlikeyoumeanit.com/Module2_EssentialsOfPython/Iterables.html)
+and one on async iterators at [https://superfastpython.com/python-asyncio/#Asynchronous_Iterators](https://superfastpython.com/python-asyncio/#Asynchronous_Iterators).
 
 ## Usage
 ```py
@@ -31,7 +31,7 @@ async def main():
         # Do other stuff
 ```
 
-Look at `.client.RoboMasterClient` for a list of all the methods you can call on the robot.
+Look at `.client.RoboMasterClient` for a list of available methods on the robot.
 Also look at How To for more examples.
 
 .. include:: ../../md_docs/how_to.md
