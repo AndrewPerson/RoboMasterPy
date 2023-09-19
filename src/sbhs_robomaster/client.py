@@ -192,36 +192,35 @@ class RoboMasterClient:
     async def get_status(self) -> ChassisStatus:
         return ChassisStatus.parse(await self.do("chassis", "status", "?"))
 
-    async def set_chassis_push_rate(self, position_freq: int | None = None, attitude_freq: int | None = None,
-                                    status_freq: int | None = None) -> None:
+    async def set_chassis_position_push_rate(self, freq: int) -> None:
         """
-        Sets the push rate of the chassis in Hz. Set to `None` to disable.
-    
-        **NOTE:** There is currently no way to access this data. :)
+        Sets the push rate of the chassis position in Hz. Set to `0` to disable.
         """
 
-        if position_freq is None and attitude_freq is None and status_freq is None:
-            raise ValueError("At least one frequency must be set.")
+        if freq == 0:
+            await self.do("chassis", "push", "position", False)
+        else:
+            await self.do("chassis", "push", "position", True, "pfreq", freq)
 
-        position_args = []
-        if position_freq == 0:
-            position_args = ["position", False]
-        elif position_freq is not None:
-            position_args = ["position", True, "pfreq", position_freq]
+    async def set_chassis_attitude_push_rate(self, freq: int) -> None:
+        """
+        Sets the push rate of the chassis attitude in Hz. Set to `0` to disable.
+        """
 
-        attitude_args = []
-        if attitude_freq == 0:
-            attitude_args = ["attitude", False]
-        elif attitude_args is not None:
-            attitude_args = ["attitude", True, "afreq", attitude_freq]
+        if freq == 0:
+            await self.do("chassis", "push", "attitude", False)
+        else:
+            await self.do("chassis", "push", "attitude", True, "afreq", freq)
 
-        status_args = []
-        if status_freq == 0:
-            status_args = ["status", False]
-        elif status_freq is not None:
-            status_args = ["status", True, "sfreq", status_freq]
+    async def set_chassis_status_push_rate(self, freq: int) -> None:
+        """
+        Sets the push rate of the chassis status in Hz. Set to `0` to disable.
+        """
 
-        await self.do("chassis", "push", *position_args, *attitude_args, *status_args)
+        if freq == 0:
+            await self.do("chassis", "push", "status", False)
+        else:
+            await self.do("chassis", "push", "status", True, "sfreq", freq)
 
     async def set_ir_enabled(self, enabled: bool = True) -> None:
         await self.do("ir_distance_sensor", "measure", enabled)
