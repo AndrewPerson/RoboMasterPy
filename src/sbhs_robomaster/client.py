@@ -1,5 +1,6 @@
 from enum import Enum
-from typing import Final
+from types import TracebackType
+from typing import Final, Optional, Type
 import asyncio
 from .data import *
 from .push_receiver import PushReceiver
@@ -41,7 +42,7 @@ async def connect_to_robomaster(ip: str) -> "RoboMasterClient":
     return client
 
 
-def command_to_str(command: str | int | float | bool | Enum):
+def command_to_str(command: str | int | float | bool | Enum) -> str:
     """
     Converts a data type to a string that can be sent to the robot.
     """
@@ -94,7 +95,7 @@ class RoboMasterClient:
     _conn: tuple[asyncio.StreamReader, asyncio.StreamWriter]
     _command_lock: asyncio.Lock
     _push_receiver: PushReceiver
-    _handle_push_task: asyncio.Task
+    _handle_push_task: asyncio.Task[None]
     _exiting: bool
 
     def __init__(self, command_conn: tuple[asyncio.StreamReader, asyncio.StreamWriter]) -> None:
@@ -116,7 +117,7 @@ class RoboMasterClient:
     async def __aenter__(self):
         return self
 
-    async def __aexit__(self, exc_type, exc, tb):
+    async def __aexit__(self, exc_type: Optional[Type[BaseException]], exc: Optional[BaseException], tb: Optional[TracebackType]):
         await self.do("quit")
 
         self._exiting = True
@@ -125,38 +126,37 @@ class RoboMasterClient:
         self._conn[1].close()
 
     async def _handle_push(self, feed: Feed[Response]):
-        async for response in feed:
+        while True:
+            response = await feed.get()
+
             topic = response.data[0]
             subject = response.data[2]
             parseData = Response(response.data[3:])
 
             if topic == "chassis":
-                if subject == "position": await self.position.feed(ChassisPosition.parse(parseData))
-                elif subject == "attitude": await self.attitude.feed(ChassisAttitude.parse(parseData))
-                elif subject == "status": await self.status.feed(ChassisStatus.parse(parseData))
-                else: print(f"Unknown chassis subject: {subject}")
+                if subject == "position":   self.position.feed(ChassisPosition.parse(parseData))
+                elif subject == "attitude": self.attitude.feed(ChassisAttitude.parse(parseData))
+                elif subject == "status":   self.status.feed(ChassisStatus.parse(parseData))
+                else:                       print(f"Unknown chassis subject: {subject}")
             elif topic == "AI":
-                if subject == "line": await self.line.feed(Line.parse(parseData))
-                else: print(f"Unknown AI subject: {subject}")
+                if subject == "line": self.line.feed(Line.parse(parseData))
+                else:                 print(f"Unknown AI subject: {subject}")
             else:
                 print(f"Unknown topic: {topic}")
 
     async def _do(self, command: str):
-        await self._command_lock.acquire()
+        async with self._command_lock:
+            if self._exiting:
+                raise Exception("Client is exiting.")
 
-        if self._exiting:
-            raise Exception("Client is exiting.")
+            self._conn[1].write(command.encode())
+            await self._conn[1].drain()
 
-        self._conn[1].write(command.encode())
-        await self._conn[1].drain()
+            data = await self._conn[0].readuntil(b";")
 
-        data = await self._conn[0].readuntil(b";")
+            return Response(data.decode()[:-1].split(" "))
 
-        self._command_lock.release()
-
-        return Response(data.decode()[:-1].split(" "))
-
-    async def do(self, *commands: str | int | float | bool | Enum) -> Response:
+    async def do(self, *command_data: str | int | float | bool | Enum) -> Response:
         """
         Low level command sending. Every function that influences the robot's behaviour
         uses this internally.
@@ -164,24 +164,24 @@ class RoboMasterClient:
         It's better to use the higher level functions instead of this.
 
         Arguments:
-         - *commands: The commands to send to the robot. These can be strings, numbers, booleans or enums.
-                      All of these will be converted to strings using `command_to_str`.
+         - *command_data: The parts of the command to send to the robot. These can be strings, numbers, booleans or enums.
+                          All of these will be converted to strings using `command_to_str`.
         """
         
-        command = ' '.join(map(command_to_str, commands)) + ';'
+        command = ' '.join(map(command_to_str, command_data)) + ';'
         return await self._do(command)
 
     async def get_version(self) -> str:
         return (await self.do("version")).get_str(0)
 
-    async def set_speed(self, forwards: float, right: float, clockwise: float) -> None:
+    async def set_speed(self, forwards: float, right: float, clockwise: float = 0) -> None:
         """
         Causes the robot to move with the given speeds indefinitely.
 
         Arguments:
          - forwards: The forwards speed in m/s
          - right: The right speed in m/s
-         - clockwise: The clockwise speed in degrees/s
+         - clockwise: The rotational speed in degrees/s clockwise
         """
         await self.do("chassis", "speed", "x", forwards, "y", right, "z", clockwise)
 
@@ -197,11 +197,19 @@ class RoboMasterClient:
             "w4", back_right
         )
 
-    async def get_wheel_speed(self) -> ChassisSpeed:
+    async def set_left_right_wheel_speeds(self, left: float, right: float) -> None:
         """
-        Returns:
-         - The current wheel speeds in rpm.
+        All speeds are in rpm.
         """
+        await self.set_wheel_speed(right, left, left, right)
+
+    async def set_all_wheel_speeds(self, speed: float) -> None:
+        """
+        All speeds are in rpm.
+        """
+        await self.set_wheel_speed(speed, speed, speed, speed)
+
+    async def get_speed(self) -> ChassisSpeed:
         return ChassisSpeed.parse(await self.do("chassis", "speed", "?"))
 
     async def move(self, forwards: float, right: float, clockwise: float,
@@ -214,7 +222,7 @@ class RoboMasterClient:
         Arguments:
          - forwards: The distance forwards in metres
          - right: The distance right in metres
-         - clockwise: The rotation in degrees
+         - clockwise: The clockwise rotation in degrees
          - speed: The forwards and right speed in m/s. Leave as `None` to use the default.
          - rotation_speed: The rotation speed in degrees/s. Leave as `None` to use the default.
         """
@@ -245,38 +253,32 @@ class RoboMasterClient:
     async def get_status(self) -> ChassisStatus:
         return ChassisStatus.parse(await self.do("chassis", "status", "?"))
 
-    async def set_chassis_position_push_rate(self, freq: int) -> None:
+    async def set_chassis_position_push_rate(self, freq: Frequency) -> None:
         """
-        Sets the push rate of the chassis position in Hz. Set to `0` to disable.
-
-        Allowed frequencies are 0, 1, 5, 10, 20, 30, 50.
+        Sets the push rate of the chassis position in Hz. Use `Frequency.Off` to disable.
         """
 
-        if freq == 0:
+        if freq == Frequency.Off:
             await self.do("chassis", "push", "position", False)
         else:
             await self.do("chassis", "push", "position", True, "pfreq", freq)
 
-    async def set_chassis_attitude_push_rate(self, freq: int) -> None:
+    async def set_chassis_attitude_push_rate(self, freq: Frequency) -> None:
         """
-        Sets the push rate of the chassis attitude in Hz. Set to `0` to disable.
-
-        Allowed frequencies are 0, 1, 5, 10, 20, 30, 50.
+        Sets the push rate of the chassis attitude in Hz. Use `Frequency.Off` to disable.
         """
 
-        if freq == 0:
+        if freq == Frequency.Off:
             await self.do("chassis", "push", "attitude", False)
         else:
             await self.do("chassis", "push", "attitude", True, "afreq", freq)
 
-    async def set_chassis_status_push_rate(self, freq: int) -> None:
+    async def set_chassis_status_push_rate(self, freq: Frequency) -> None:
         """
-        Sets the push rate of the chassis status in Hz. Set to `0` to disable.
-
-        Allowed frequencies are 0, 1, 5, 10, 20, 30, 50.
+        Sets the push rate of the chassis status in Hz. Use `Frequency.Off` to disable.
         """
 
-        if freq == 0:
+        if freq == Frequency.Off:
             await self.do("chassis", "push", "status", False)
         else:
             await self.do("chassis", "push", "status", True, "sfreq", freq)
@@ -298,10 +300,11 @@ class RoboMasterClient:
     
     async def move_arm(self, x_dist: float, y_dist: float) -> None:
         """
-        Moves the robotic arm by the given distance. To move to a specific position,
-        use `set_arm_position` instead.
+        Moves the robotic arm by the given distance relative to its current position.
+        To move to a specific position, use `set_arm_position` instead.
 
-        The units are unknown. Use `get_arm_position` to find positions to move to.
+        The units are unknown. Physically move the arm around and record the results from
+        `get_arm_position` to determine the desired inputs for this function.
         """
         await self.do("robotic_arm", "move", "x", x_dist, "y", y_dist)
     
@@ -310,7 +313,10 @@ class RoboMasterClient:
         Moves the robotic arm to the given position. To move relative to the current position,
         use `move_arm` instead.
 
-        The units are unknown. Use `get_arm_position` to find positions want to move to.
+        The units are unknown. Physically move the arm to the desired position and then use
+        `get_arm_position` to find the desired inputs for this function. The origin for the
+        x and y values appears to be different for every robot, so values for one robot will
+        not carry over to another.
         """
         await self.do("robotic_arm", "moveto", "x", x, "y", y)
     
@@ -339,6 +345,9 @@ class RoboMasterClient:
         await self.do("robotic_gripper", "close", 1)
 
     async def get_gripper_status(self) -> GripperStatus:
+        """
+        Gets whether the gripper is Open, Closed, or Partially Open.
+        """
         return (await self.do("robotic_gripper", "status", "?")).get_enum(0, GripperStatus)
 
     async def set_line_recognition_colour(self, colour: LineColour) -> None:

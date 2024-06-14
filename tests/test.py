@@ -6,12 +6,9 @@ async def main():
         await robot.set_line_recognition_colour(LineColour.Red)
         await robot.set_line_recognition_enabled()
 
-        async for line in DroppingAsyncEnumerable(robot.line):
+        dropping_line = DroppingFeed(robot.line)
+        while True:
+            line = await dropping_line.get_most_recent()
             print(f"LINE: {line}")
-            # print(line.points)
-
-    # async for test in Feed():
-    #     print(test)
-
 
 asyncio.run(main())

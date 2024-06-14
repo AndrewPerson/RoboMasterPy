@@ -10,7 +10,7 @@ from .feed import Feed
 class PushReceiver:
     feed: Feed[Response]
 
-    _data_receiving_task: asyncio.Task
+    _data_receiving_task: asyncio.Task[None]
 
     def __init__(self, port: int):
         self.feed = Feed()
@@ -25,8 +25,9 @@ class PushReceiver:
         self._data_receiving_task = asyncio.create_task(self._receive_data(tup.result()[1].feed))
 
     async def _receive_data(self, feed: Feed[bytes]):
-        async for message in feed:
-            await self.feed.feed(Response(message.decode()[:-1].split(" ")))
+        while True:
+            message = await feed.get()
+            self.feed.feed(Response(message.decode()[:-1].split(" ")))
 
     def __del__(self):
         self._data_receiving_task.cancel()
@@ -34,15 +35,11 @@ class PushReceiver:
 
 class _PushReceiverHandler(asyncio.DatagramProtocol):
     feed: Feed[bytes]
-    _feed_tasks: set[asyncio.Task]
 
     def __init__(self) -> None:
         super().__init__()
 
         self.feed = Feed()
-        self._feed_tasks = set()
 
-    def datagram_received(self, data, addr):
-        t = asyncio.create_task(self.feed.feed(data))
-        self._feed_tasks.add(t)
-        t.add_done_callback(self._feed_tasks.discard)
+    def datagram_received(self, data: bytes, addr: tuple[str, int]):
+        self.feed.feed(data)

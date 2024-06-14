@@ -3,6 +3,17 @@ from dataclasses import dataclass
 from typing import TypeVar
 
 
+class Frequency(Enum):
+    """"""
+    Off = "0"
+    Hz1 = "1"
+    Hz5 = "5"
+    Hz10 = "10"
+    Hz20 = "20"
+    Hz30 = "30"
+    Hz50 = "50"
+
+
 class Mode(Enum):
     """"""
     ChassisLead = "chassis_lead"
@@ -74,6 +85,8 @@ class Response:
         response.get_enum(1, MyEnum) # MyEnum.B
         response.get_enum(2, MyEnum) # MyEnum.C
         ```
+
+        **NOTE:** This only works for enums that have strings as their underlying values.
         """
         return enum(self.data[index])
 
@@ -198,7 +211,7 @@ class Line:
             case _:
                 raise Exception("Invalid line type")
 
-        points = []
+        points: list[Point] = []
 
         for i in range(point_count):
             points.append(Point(
