@@ -61,7 +61,7 @@ asyncio.run(main())
 ## Get line information
 ```py
 import asyncio
-from sbhs_robomaster import connect_to_robomaster, DIRECT_CONNECT_IP, LineColour
+from sbhs_robomaster import connect_to_robomaster, DIRECT_CONNECT_IP, DroppingFeed, LineColour
 
 async def main():
     async with await connect_to_robomaster(DIRECT_CONNECT_IP) as robot:
