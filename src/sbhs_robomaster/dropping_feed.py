@@ -10,6 +10,7 @@ class DroppingFeed(Generic[DroppingFeedT]):
 
     Example:
     ```py
+    import asyncio
     from sbhs_robomaster import connect_to_robomaster, DIRECT_CONNECT_IP, LineColour, DroppingFeed
 
     async def main():

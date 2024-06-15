@@ -24,22 +24,18 @@ async def main():
     # moving, not when it has finished.
 
     async with await connect_to_robomaster(DIRECT_CONNECT_IP) as robot:
-        await robot.move(0.5, 0.5, 0) # Move forward by 0.5m and to the right by 0.5m
+        await robot.rotate(90) # Rotate the robot 90° clockwise
+
+        await robot.set_all_wheel_speeds(50) # Rotate all wheels indefinitely at 50rpm
         await asyncio.sleep(5)
 
-        await robot.move(0, 0, 90) # Rotate clockwise by 90 degrees
+        await robot.set_all_wheel_speeds(0) # Stop the robot
+
+        # Get the left wheels to rotate at 50rpm and the right wheels at 20
+        await robot.set_left_right_wheel_speeds(50, 20)
         await asyncio.sleep(5)
 
-        await robot.set_speed(0.5, 0.5, 0) # Move the robot indefinitely at a speed of 0.5m/s forward and 0.5m/s to the right
-        await asyncio.sleep(5)
-
-        await robot.set_speed(0, 0, 10) # Rotate the robot indefinitely at a speed of 10 degrees/s clockwise
-        await asyncio.sleep(5)
-
-        await robot.set_wheel_speed(50, 50, 50, 50) # Rotate all wheels indefinitely at 50rpm
-        await asyncio.sleep(5)
-
-        await robot.set_wheel_speed(0, 0, 0, 0) # Stop the robot
+        await robot.set_all_wheel_speeds(0)
 
 asyncio.run(main())
 ```
@@ -70,10 +66,14 @@ from sbhs_robomaster import connect_to_robomaster, DIRECT_CONNECT_IP, LineColour
 async def main():
     async with await connect_to_robomaster(DIRECT_CONNECT_IP) as robot:
         await robot.set_line_recognition_enabled()
-        await robot.set_line_recognition_colour(LineColour.Red)
+        await robot.set_line_recognition_color(LineColour.Red)
 
-        async for line in robot.line:
-            print(line)
+        # We use a `DroppingFeed` so we always get the most recent line data
+        # even if we can't process it as fast as we receive it.
+        line = DroppingFeed(robot.line)
+
+        while True:
+            print(await line.get_most_recent())
 
 asyncio.run(main())
 ```

@@ -40,6 +40,7 @@ class Feed(Generic[FeedT]):
     sends data over UDP to the computer. This data can be received using the `Feed` class:
 
     ```py
+    import asyncio
     from sbhs_robomaster import connect_to_robomaster, DIRECT_CONNECT_IP, LineColour
 
     async def main():
