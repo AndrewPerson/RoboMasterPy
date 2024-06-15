@@ -2,6 +2,7 @@ from enum import Enum
 from types import TracebackType
 from typing import Final, Optional, Type
 import asyncio
+from time import time
 from .data import *
 from .push_receiver import PushReceiver
 from .feed import Feed
@@ -36,8 +37,7 @@ async def connect_to_robomaster(ip: str) -> "RoboMasterClient":
     command_socket = await asyncio.open_connection(ip, _CONTROL_PORT)
 
     client = RoboMasterClient(command_socket)
-
-    await client.do("command")
+    await client.async_init()
 
     return client
 
@@ -71,11 +71,11 @@ class RoboMasterClient:
     the line colour has to be set with `set_line_recognition_colour`.
     """
 
-    position: Feed[ChassisPosition]
+    rotation: Feed[ChassisRotation]
     """
-    A feed of the robot's position.
+    A feed of the robot's rotation.
 
-    This has to be enabled first with `set_chassis_position_push_rate`.
+    This has to be enabled first with `set_chassis_rotation_push_rate`.
     """
 
     attitude: Feed[ChassisAttitude]
@@ -92,6 +92,11 @@ class RoboMasterClient:
     This has to be enabled first with `set_chassis_status_push_rate`.
     """
 
+    _line_enabled: bool
+    _rotation_frequency: Frequency
+    _attitude_frequency: Frequency
+    _status_frequency: Frequency
+
     _conn: tuple[asyncio.StreamReader, asyncio.StreamWriter]
     _command_lock: asyncio.Lock
     _push_receiver: PushReceiver
@@ -104,15 +109,33 @@ class RoboMasterClient:
         """
 
         self.line = Feed()
-        self.position = Feed()
+        self.rotation = Feed()
         self.attitude = Feed()
         self.status = Feed()
+
+        self._line_enabled = False
+        self._rotation_frequency = Frequency.Off
+        self._attitude_frequency = Frequency.Off
+        self._status_frequency = Frequency.Off
 
         self._conn = command_conn
         self._command_lock = asyncio.Lock()
         self._push_receiver = PushReceiver(_PUSH_PORT)
         self._handle_push_task = asyncio.create_task(self._handle_push(self._push_receiver.feed))
         self._exiting = False
+
+    async def async_init(self):
+        """
+        Performs any asynchronous initialisation required. Should be called
+        immediately after the class is constructed. `connect_to_robomaster`
+        handles this automatically.
+        """
+        await self.do("command")
+
+        await self.set_line_recognition_enabled(False)
+        await self.set_rotation_push_rate(Frequency.Off)
+        await self.set_attitude_push_rate(Frequency.Off)
+        await self.set_status_push_rate(Frequency.Off)
 
     async def __aenter__(self):
         return self
@@ -134,7 +157,7 @@ class RoboMasterClient:
             parseData = Response(response.data[3:])
 
             if topic == "chassis":
-                if subject == "position":   self.position.feed(ChassisPosition.parse(parseData))
+                if subject == "position":   self.rotation.feed(ChassisRotation.parse(parseData))
                 elif subject == "attitude": self.attitude.feed(ChassisAttitude.parse(parseData))
                 elif subject == "status":   self.status.feed(ChassisStatus.parse(parseData))
                 else:                       print(f"Unknown chassis subject: {subject}")
@@ -212,31 +235,26 @@ class RoboMasterClient:
     async def get_speed(self) -> ChassisSpeed:
         return ChassisSpeed.parse(await self.do("chassis", "speed", "?"))
 
-    async def move(self, forwards: float, right: float, clockwise: float,
-                   speed: float | None = None, rotation_speed: float | None = None) -> None:
+    async def rotate(self, clockwise: float, rotation_speed: float | None = None, timeout: float = 10) -> None:
         """
-        Moves the robot and rotates it. The robot rotates *as* it moves.
-        
-        **NOTE:** This does *not* wait until the robot has finished moving. Use `await asyncio.sleep` to manually wait.
+        **NOTE:** This function constantly polls the robot for its rotation and
+        may starve out other areas in the program trying to send messages to
+        the robot. In general, due to the serial nature of the communication
+        protocol, any communication with the robot should not be largely
+        parallel.
 
         Arguments:
-         - forwards: The distance forwards in metres
-         - right: The distance right in metres
-         - clockwise: The clockwise rotation in degrees
-         - speed: The forwards and right speed in m/s. Leave as `None` to use the default.
-         - rotation_speed: The rotation speed in degrees/s. Leave as `None` to use the default.
+         - clockwise: The degrees clockwise to rotate.
+         - rotation_speed: The speed to rotate, in degrees/s. (Must be positive.)
+         - timeout: How long to wait for the turn to finish (in seconds).
         """
 
         args = [
             "chassis", "move",
-            "x", forwards,
-            "y", right,
+            "x", 0,
+            "y", 0,
             "z", clockwise
         ]
-
-        if speed is not None:
-            args.append("vxy")
-            args.append(speed)
 
         if rotation_speed is not None:
             args.append("vz")
@@ -244,8 +262,19 @@ class RoboMasterClient:
 
         await self.do(*args)
 
-    async def get_position(self) -> ChassisPosition:
-        return ChassisPosition.parse(await self.do("chassis", "position", "?"))
+        start_time = time()
+        while time() - start_time > timeout:
+            status = await self.get_status()
+
+            if status.static:
+                return
+            
+            await asyncio.sleep(0.02) # 50Hz
+            
+        raise TimeoutError()
+
+    async def get_rotation(self) -> ChassisRotation:
+        return ChassisRotation.parse(await self.do("chassis", "position", "?"))
     
     async def get_attitude(self) -> ChassisAttitude:
         return ChassisAttitude.parse(await self.do("chassis", "attitude", "?"))
@@ -253,17 +282,27 @@ class RoboMasterClient:
     async def get_status(self) -> ChassisStatus:
         return ChassisStatus.parse(await self.do("chassis", "status", "?"))
 
-    async def set_chassis_position_push_rate(self, freq: Frequency) -> None:
+    async def set_rotation_push_rate(self, freq: Frequency) -> None:
         """
-        Sets the push rate of the chassis position in Hz. Use `Frequency.Off` to disable.
+        Sets the push rate of the chassis rotation in Hz. Use `Frequency.Off` to disable.
         """
 
+        # This sets the "position" push frequency because
+        # that is where the rotation is stored.
         if freq == Frequency.Off:
             await self.do("chassis", "push", "position", False)
         else:
             await self.do("chassis", "push", "position", True, "pfreq", freq)
 
-    async def set_chassis_attitude_push_rate(self, freq: Frequency) -> None:
+        self._rotation_frequency = freq
+
+    def get_rotation_push_rate(self) -> Frequency:
+        """
+        Gets the push rate of the chassis rotation in Hz. `Frequency.Off` means it is disabled.
+        """
+        return self._rotation_frequency
+
+    async def set_attitude_push_rate(self, freq: Frequency) -> None:
         """
         Sets the push rate of the chassis attitude in Hz. Use `Frequency.Off` to disable.
         """
@@ -273,7 +312,15 @@ class RoboMasterClient:
         else:
             await self.do("chassis", "push", "attitude", True, "afreq", freq)
 
-    async def set_chassis_status_push_rate(self, freq: Frequency) -> None:
+        self._attitude_frequency = freq
+
+    def get_attitude_push_rate(self) -> Frequency:
+        """
+        Gets the push rate of the chassis rotation in Hz. `Frequency.Off` means it is disabled.
+        """
+        return self._attitude_frequency
+
+    async def set_status_push_rate(self, freq: Frequency) -> None:
         """
         Sets the push rate of the chassis status in Hz. Use `Frequency.Off` to disable.
         """
@@ -282,6 +329,14 @@ class RoboMasterClient:
             await self.do("chassis", "push", "status", False)
         else:
             await self.do("chassis", "push", "status", True, "sfreq", freq)
+
+        self._status_frequency = freq
+
+    def get_status_push_rate(self) -> Frequency:
+        """
+        Gets the push rate of the chassis rotation in Hz. `Frequency.Off` means it is disabled.
+        """
+        return self._status_frequency
 
     async def set_ir_enabled(self, enabled: bool = True) -> None:
         await self.do("ir_distance_sensor", "measure", enabled)
@@ -355,3 +410,8 @@ class RoboMasterClient:
 
     async def set_line_recognition_enabled(self, enabled: bool = True) -> None:
         await self.do("AI", "push", "line", enabled)
+
+        self._line_enabled = enabled
+
+    def get_line_recognition_enabled(self) -> bool:
+        return self._line_enabled

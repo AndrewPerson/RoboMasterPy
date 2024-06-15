@@ -122,17 +122,23 @@ class ChassisSpeed:
 
 
 @dataclass
-class ChassisPosition:
-    z: float
-    x: float
-    clockwise: float | None
+class ChassisRotation:
+    """
+    This actually parses the position data from the robot,
+    but removes the x and z coordinates due to them being
+    too inaccurate and being a major footgun.
+    """
+
+    clockwise: float
+    """
+    The rotation in degrees clockwise around the vertical axis,
+    relative to the robot's starting orientation.
+    """
 
     @staticmethod
-    def parse(data: Response) -> "ChassisPosition":
-        return ChassisPosition(
-            z = data.get_float(0),
-            x = data.get_float(1),
-            clockwise = data.get_float(2) if len(data.data) == 3 else None
+    def parse(data: Response) -> "ChassisRotation":
+        return ChassisRotation(
+            clockwise = data.get_float(2)
         )
 
 
