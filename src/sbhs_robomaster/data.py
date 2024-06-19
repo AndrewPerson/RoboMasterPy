@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, IntFlag, auto
 from dataclasses import dataclass
 from typing import TypeVar
 
@@ -41,6 +41,33 @@ class LineColour(Enum):
     Red = "red"
     Blue = "blue"
     Green = "green"
+
+
+class LedPosition(IntFlag):
+    """
+    Use the flag combining operator (`|`) to combine multiple leds.
+
+    ```py
+    front_and_left_leds = LedPosition.Front | LedPosition.Left
+    ```
+
+    `LedPosition.All` is equivalent to `LedPosition.Front | LedPosition.Back | LedPosition.Left | LedPosition.Right`.
+    It's just a lot faster to type.
+    """
+    Front = auto()
+    Back = auto()
+    Left = auto()
+    Right = auto()
+    All = Front | Back | Left | Right
+
+
+class LedEffect(Enum):
+    """"""
+    Off = "off"
+    Solid = "solid"
+    Pulse = "pulse"
+    Blink = "blink"
+    Scrolling = "scrolling"
 
 
 @dataclass
@@ -228,3 +255,10 @@ class Line:
             ))
 
         return Line(line_type, points)
+
+
+@dataclass
+class Colour:
+    r: float
+    g: float
+    b: float

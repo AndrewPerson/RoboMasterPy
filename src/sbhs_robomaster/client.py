@@ -1,6 +1,6 @@
 from enum import Enum
 from types import TracebackType
-from typing import Final, Optional, Type
+from typing import Final, Optional, Type, Coroutine
 import asyncio
 from time import time
 from .data import *
@@ -415,3 +415,34 @@ class RoboMasterClient:
 
     def get_line_recognition_enabled(self) -> bool:
         return self._line_enabled
+    
+    async def set_leds(self, leds: LedPosition, colour: Colour, effect: LedEffect = LedEffect.Solid) -> None:
+        """
+        Sets the given LEDs to display a colour with a certain effect. Use
+        `.data.LedEffect.Off` to turn the leds off.
+
+        See `.data.LedPosition` to see how to pass in multiple leds at once.
+        
+        See `.data.LedEffect` to see the available effects.
+        """
+        async def set_led(led: str):
+            await self.do("led", "control", "comp", led, colour.r, colour.g, colour.b, effect)
+
+        if leds == LedPosition.All:
+            await set_led("bottom_all")
+        else:
+            tasks: list[Coroutine] = []
+
+            if LedPosition.Front in leds:
+                tasks.append(set_led("bottom_front"))
+            
+            if LedPosition.Back in leds:
+                tasks.append(set_led("bottom_back"))
+
+            if LedPosition.Left in leds:
+                tasks.append(set_led("bottom_left"))
+
+            if LedPosition.Right in leds:
+                tasks.append(set_led("bottom_right"))
+
+            await asyncio.gather(*tasks)
