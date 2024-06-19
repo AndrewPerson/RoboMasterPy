@@ -8,5 +8,6 @@
         "**/Thumbs.db": true,
         "**/.godot": true
     },
-    "hide-files.files": []
+    "hide-files.files": [],
+    "liveServer.settings.root": "/docs"
 }
