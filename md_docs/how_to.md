@@ -19,17 +19,16 @@ import asyncio
 from sbhs_robomaster import connect_to_robomaster, DIRECT_CONNECT_IP
 
 async def main():
-    # NOTE: In the following examples, we use `asyncio.sleep` to wait for the robot
-    # to finish moving because calls to `move` complete once the robot has started
-    # moving, not when it has finished.
-
     async with await connect_to_robomaster(DIRECT_CONNECT_IP) as robot:
-        await robot.rotate(90) # Rotate the robot 90° clockwise
+        # Rotate the robot 90° clockwise
+        await robot.rotate(90)
 
-        await robot.set_all_wheel_speeds(50) # Rotate all wheels indefinitely at 50rpm
+        # Rotate all wheels indefinitely at 50rpm
+        await robot.set_all_wheel_speeds(50)
         await asyncio.sleep(5)
 
-        await robot.set_all_wheel_speeds(0) # Stop the robot
+        # Stop the robot
+        await robot.set_all_wheel_speeds(0)
 
         # Get the left wheels to rotate at 50rpm and the right wheels at 20
         await robot.set_left_right_wheel_speeds(50, 20)
@@ -47,9 +46,13 @@ from sbhs_robomaster import connect_to_robomaster, DIRECT_CONNECT_IP
 
 async def main():
     async with await connect_to_robomaster(DIRECT_CONNECT_IP) as robot:
-        await robot.set_arm_position(79, 150) # Move the arm to the position (79, 150). Each robot has its coordinate relative to a different origin, so you will have to find the coordinates for your robot yourself. (Using `robot.get_arm_position`)
+        # Move the arm to the position (79, 150). Each robot has its coordinates
+        # relative to a different origin, so you will have to find the coordinates
+        # for your robot yourself. (Using `robot.get_arm_position`)
+        await robot.set_arm_position(79, 150)
 
-        await robot.move_arm(10, 10) # Move the arm 10 units in the x direction and 10 units in the y direction.
+        # Move the arm 10 units in the x direction and 10 units in the y direction.
+        await robot.move_arm(10, 10)
 
         # Using `move_arm` is the same as:
         x, y = await robot.get_arm_position()
@@ -89,7 +92,8 @@ async def main():
     async with await connect_to_robomaster(DIRECT_CONNECT_IP) as robot:
         await robot.set_ir_enabled()
 
-        print(await robot.get_ir_distance(1)) # Get the distance from the IR sensor 1
+        # Get the distance from the IR sensor 1
+        print(await robot.get_ir_distance(1))
 
 asyncio.run(main())
 ```
