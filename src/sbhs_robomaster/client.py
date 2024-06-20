@@ -206,12 +206,23 @@ class RoboMasterClient:
          - right: The right speed in m/s
          - clockwise: The rotational speed in degrees/s clockwise
         """
+
+        assert -3.5 <= forwards <= 3.5, "Movement speed must be between -3.5 and 3.5 m/s"
+        assert -3.5 <= right <= 3.5,    "Movement speed must be between -3.5 and 3.5 m/s"
+        assert -600 <= clockwise <= 600, "Rotation speed must be between -600 and 600 degrees/s"
+
         await self.do("chassis", "speed", "x", forwards, "y", right, "z", clockwise)
 
     async def set_wheel_speed(self, front_right: float, front_left: float, back_left: float, back_right: float) -> None:
         """
         All speeds are in rpm.
         """
+
+        assert -1000 <= front_right <= 1000, "Wheel speeds must be between -1000 and 1000 rpm"
+        assert -1000 <= front_left <= 1000,  "Wheel speeds must be between -1000 and 1000 rpm"
+        assert -1000 <= back_left <= 1000,   "Wheel speeds must be between -1000 and 1000 rpm"
+        assert -1000 <= back_right <= 1000,  "Wheel speeds must be between -1000 and 1000 rpm"
+
         await self.do(
             "chassis", "wheel",
             "w1", front_right,
@@ -248,6 +259,11 @@ class RoboMasterClient:
          - rotation_speed: The speed to rotate, in degrees/s. (Must be positive.)
          - timeout: How long to wait for the turn to finish (in seconds).
         """
+
+        assert -1800 <= clockwise <= 1800, "Rotation must be between -1800 and 1800 degrees"
+        
+        if rotation_speed is not None:
+            assert 0 <= rotation_speed <= 600, "Rotation speed must be positive and less than 600 degrees/s"
 
         args = [
             "chassis", "move",
