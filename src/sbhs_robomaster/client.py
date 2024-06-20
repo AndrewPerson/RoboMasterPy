@@ -349,7 +349,7 @@ class RoboMasterClient:
          - ir_id: The ID of the IR sensor. There appears to be only one IR sensor, so this should always be `1`.
         
         Returns:
-         - The distance in millimetres.
+         - The distance in centimetres.
         """
         return (await self.do("ir_distance_sensor", "distance", ir_id, "?")).get_float(0)
     
