@@ -285,6 +285,8 @@ class RoboMasterClient:
     async def set_rotation_push_rate(self, freq: Frequency) -> None:
         """
         Sets the push rate of the chassis rotation in Hz. Use `Frequency.Off` to disable.
+
+        Access the rotation data through the `RoboMasterClient.rotation` feed.
         """
 
         # This sets the "position" push frequency because
@@ -305,6 +307,8 @@ class RoboMasterClient:
     async def set_attitude_push_rate(self, freq: Frequency) -> None:
         """
         Sets the push rate of the chassis attitude in Hz. Use `Frequency.Off` to disable.
+
+        Access the attitude data through the `RoboMasterClient.attitude` feed.
         """
 
         if freq == Frequency.Off:
@@ -323,6 +327,8 @@ class RoboMasterClient:
     async def set_status_push_rate(self, freq: Frequency) -> None:
         """
         Sets the push rate of the chassis status in Hz. Use `Frequency.Off` to disable.
+
+        Access the status data through the `RoboMasterClient.status` feed.
         """
 
         if freq == Frequency.Off:
@@ -347,9 +353,9 @@ class RoboMasterClient:
 
         Arguments:
          - ir_id: The ID of the IR sensor. There appears to be only one IR sensor, so this should always be `1`.
-        
+
         Returns:
-         - The distance in millimetres.
+         - The distance in centimeters.
         """
         return (await self.do("ir_distance_sensor", "distance", ir_id, "?")).get_float(0)
     
@@ -409,6 +415,9 @@ class RoboMasterClient:
         await self.do("AI", "attribute", "line_color", colour)
 
     async def set_line_recognition_enabled(self, enabled: bool = True) -> None:
+        """
+        Access the line data through the `RoboMasterClient.line` feed.
+        """
         await self.do("AI", "push", "line", enabled)
 
         self._line_enabled = enabled
