@@ -93,6 +93,10 @@ class Response:
             return True
         elif self.data[index] == "off":
             return False
+        elif self.data[index] == "1":
+            return True
+        elif self.data[index] == "0":
+            return False
         else:
             raise Exception("Invalid bool value")
     
