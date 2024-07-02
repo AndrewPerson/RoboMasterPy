@@ -279,7 +279,7 @@ class RoboMasterClient:
         await self.do(*args)
 
         start_time = time()
-        while time() - start_time > timeout:
+        while time() - start_time <= timeout:
             status = await self.get_status()
 
             if status.static:
