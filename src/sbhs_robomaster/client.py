@@ -55,8 +55,8 @@ async def connect_to_robomaster(ip: str) -> "RoboMasterClient":
     """
     Connects to a RoboMaster robot at the given IP address.
     
-    If the host computer (the computer the code is running on) is connected directly to robot's WiFi, and not over another
-    network, pass in `DIRECT_CONNECT_IP`:
+    If the host computer (the computer the code is running on) is connected directly to robot's WiFi,
+    and not over another network, pass in `DIRECT_CONNECT_IP`:
 
     ```py
     import asyncio
@@ -104,29 +104,29 @@ class RoboMasterClient:
     """
     A feed of line recognition data.
 
-    Line recognition has to be enabled first with `set_line_recognition_enabled` and
-    the line colour has to be set with `set_line_recognition_colour`.
+    Line recognition has to be enabled first with `RoboMasterClient.set_line_recognition_enabled` and
+    the line colour has to be set with `RoboMasterClient.set_line_recognition_colour`.
     """
 
     rotation: Feed[ChassisRotation]
     """
     A feed of the robot's rotation.
 
-    This has to be enabled first with `set_chassis_rotation_push_rate`.
+    This has to be enabled first with `RoboMasterClient.set_rotation_push_rate`.
     """
 
     attitude: Feed[ChassisAttitude]
     """
     A feed of the robot's attitude.
 
-    This has to be enabled first with `set_chassis_attitude_push_rate`.
+    This has to be enabled first with `RoboMasterClient.set_attitude_push_rate`.
     """
 
     status: Feed[ChassisStatus]
     """
     A feed of the robot's status.
 
-    This has to be enabled first with `set_chassis_status_push_rate`.
+    This has to be enabled first with `RoboMasterClient.set_status_push_rate`.
     """
 
     _line_enabled: bool
