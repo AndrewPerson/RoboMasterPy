@@ -6,12 +6,49 @@ from time import time
 from .data import *
 from .push_receiver import PushReceiver
 from .feed import Feed
+from .auto_connect import AutoConnectProtocol
 
 
 DIRECT_CONNECT_IP: Final[str] = "192.168.2.1"
+IP_PORT: Final[int] = 40926
 
 _CONTROL_PORT: Final[int] = 40923
 _PUSH_PORT: Final[int] = 40924
+
+
+async def auto_connect_to_robomaster() -> "RoboMasterClient":
+    """
+    It is preferable to use `connect_to_robomaster` where possible, especially if
+    you are directly connected to the WiFi the robot provides (use `DIRECT_CONNECT_IP`
+    in that case.) This is due to it not accidentally getting confused when there
+    are multiple robots (see below).
+
+    Automatically finds an unpaired RoboMaster robot on the network and connects to it.
+    
+    This assumes there will only be ONE unpaired RoboMaster robot on the network, or you
+    may end up connecting to a random robot.
+
+    ```py
+    import asyncio
+    from sbhs_robomaster import auto_connect_to_robomaster
+
+    async def main():
+        async with await auto_connect_to_robomaster() as robot:
+            # Do stuff with robot
+            pass
+
+    asyncio.run(main())
+    ```
+    """
+
+    loop = asyncio.get_event_loop()
+    transport, protocol = await loop.create_datagram_endpoint(AutoConnectProtocol, ("", IP_PORT))
+
+    ip = await protocol.ip_future
+
+    transport.close()
+
+    return await connect_to_robomaster(ip)
 
 
 async def connect_to_robomaster(ip: str) -> "RoboMasterClient":
