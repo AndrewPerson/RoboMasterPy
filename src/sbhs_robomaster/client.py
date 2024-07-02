@@ -451,7 +451,7 @@ class RoboMasterClient:
         See `.data.LedEffect` to see the available effects.
         """
         async def set_led(led: str):
-            await self.do("led", "control", "comp", led, colour.r, colour.g, colour.b, effect)
+            await self.do("led", "control", "comp", led, "r", colour.r, "g", colour.g, "b", colour.b, "effect", effect)
 
         if leds == LedPosition.All:
             await set_led("bottom_all")
