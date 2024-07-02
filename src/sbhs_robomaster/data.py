@@ -124,6 +124,8 @@ class Response:
 
 @dataclass
 class WheelSpeed:
+    """All speeds are in rpm."""
+
     front_right: float
     front_left: float
     back_right: float
@@ -133,8 +135,20 @@ class WheelSpeed:
 @dataclass
 class ChassisSpeed:
     z: float
+    """
+    Movement forwards/backwards (relative to the rotation of the robot) in m/s.
+    """
+    
     x: float
+    """
+    Movement right/left (relative to the rotation of the robot) in m/s.
+    """
+
     clockwise: float
+    """
+    Rotational speed around the vertical axis in the clockwise direction in degrees/s.
+    """
+
     wheels: WheelSpeed
 
     @staticmethod
@@ -175,6 +189,8 @@ class ChassisRotation:
 
 @dataclass
 class ChassisAttitude:
+    """All values are in degrees."""
+
     pitch: float
     roll: float
     yaw: float
@@ -263,6 +279,8 @@ class Line:
 
 @dataclass
 class Colour:
+    """All values are from 0 to 255, inclusive."""
+    
     r: float
     g: float
     b: float
