@@ -1,6 +1,6 @@
 from enum import Enum
 from types import TracebackType
-from typing import Final, Optional, Type, Coroutine
+from typing import Any, Coroutine, Final, Optional, Type
 import asyncio
 from time import time
 from .data import *
@@ -487,13 +487,14 @@ class RoboMasterClient:
         
         See `.data.LedEffect` to see the available effects.
         """
+
         async def set_led(led: str):
             await self.do("led", "control", "comp", led, "r", colour.r, "g", colour.g, "b", colour.b, "effect", effect)
 
         if leds == LedPosition.All:
             await set_led("bottom_all")
         else:
-            tasks: list[Coroutine] = []
+            tasks: list[Coroutine[Any, Any, None]] = []
 
             if LedPosition.Front in leds:
                 tasks.append(set_led("bottom_front"))
