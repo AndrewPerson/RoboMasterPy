@@ -69,7 +69,7 @@ from sbhs_robomaster import connect_to_robomaster, DIRECT_CONNECT_IP, LineColour
 async def main():
     async with await connect_to_robomaster(DIRECT_CONNECT_IP) as robot:
         await robot.set_line_recognition_enabled()
-        await robot.set_line_recognition_color(LineColour.Red)
+        await robot.set_line_recognition_colour(LineColour.Red)
 
         while True:
             print(await robot.line.get())
