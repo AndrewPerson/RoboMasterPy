@@ -24,5 +24,4 @@ Also look at `.client.RoboMasterClient` for a list of available methods on the r
 
 from .client import *
 from .data import *
-from .dropping_feed import *
 from .feed import *

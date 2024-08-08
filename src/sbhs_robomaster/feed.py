@@ -54,11 +54,9 @@ class Feed(Generic[FeedT]):
     asyncio.run(main())
     ```
 
-    **NOTE:** Data in a feed may arrive faster than it can be consumed. This means that
-    you may get delayed results. You probably want to use `.dropping_feed.DroppingFeed` to help
-    with this.
-
-    **NOTE:** Data sent to a feed *before* `get` is called won't be returned.
+    **NOTE:** Data sent to a feed *before* `get` is called won't be returned. This means that
+    if a feed is receiving data faster than a consumer is processing it, some of the data will
+    not be delivered to the consumer.
     """
 
     _return_futures: set[asyncio.Future[FeedT]]
@@ -77,7 +75,7 @@ class Feed(Generic[FeedT]):
 
     def get(self) -> asyncio.Future[FeedT]:
         """
-        Get the next piece of data from this feed.
+        Wait for the next piece of data from this feed.
         """
         future = asyncio.get_event_loop().create_future()
         self._return_futures.add(future)

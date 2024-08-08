@@ -64,24 +64,20 @@ asyncio.run(main())
 ## Get line information
 ```py
 import asyncio
-from sbhs_robomaster import connect_to_robomaster, DIRECT_CONNECT_IP, DroppingFeed, LineColour
+from sbhs_robomaster import connect_to_robomaster, DIRECT_CONNECT_IP, LineColour
 
 async def main():
     async with await connect_to_robomaster(DIRECT_CONNECT_IP) as robot:
         await robot.set_line_recognition_enabled()
         await robot.set_line_recognition_color(LineColour.Red)
 
-        # We use a `DroppingFeed` so we always get the most recent line data
-        # even if we can't process it as fast as we receive it.
-        line = DroppingFeed(robot.line)
-
         while True:
-            print(await line.get_most_recent())
+            print(await robot.line.get())
 
 asyncio.run(main())
 ```
 
-Also look at `.feed.Feed` and `.dropping_feed.DroppingFeed` for more explanation and help.
+Also look at `.feed.Feed` for more explanation and help.
 
 ## Get IR information
 ```py
