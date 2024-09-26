@@ -509,3 +509,45 @@ class RoboMasterClient:
                 tasks.append(set_led("bottom_right"))
 
             await asyncio.gather(*tasks)
+
+    async def set_camera_enabled(self, enabled: bool = True) -> None:
+        """
+        Sets whether the camera stream is enabled.
+
+        The following example requires `opencv-python` to be installed.
+        
+        ```py
+        import asyncio
+        from sbhs_robomaster import connect_to_robomaster, DIRECT_CONNECT_IP
+        import cv2 as cv
+
+        IP = DIRECT_CONNECT_IP  # change this to appropriate IP if needed
+        
+        async def main():
+            async with await connect_to_robomaster(IP) as robot:
+                robot.set_camera_enabled()
+
+                # set up capture
+                cap = cv.VideoCapture(f'tcp://{IP}:{40921}')
+                cap.set(cv.CAP_PROP_BUFFERSIZE, 4)
+            
+                assert cap.isOpened(), "Cannot open camera"
+            
+                while True:
+                    ret, frame = cap.read()
+            
+                    if not ret:
+                        print("Can't receive frame (stream end?). Exiting ...")
+                        break
+            
+                    cv.imshow('Camera Feed', frame)
+            
+                    # rest of main loop (you can do other things with robot here)
+            
+                cap.release()  # call this when done
+                
+    
+        asyncio.run(main())
+        ```
+        """
+        await self.do("stream", "on" if enabled else "off")
